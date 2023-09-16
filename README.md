@@ -2,6 +2,9 @@
 
 Dense Passage Retrieval models for the Scandinavian languages.
 
+[Link to original Dense Passage Retrieval
+paper.](https://doi.org/10.48550/arXiv.2004.04906)
+
 ______________________________________________________________________
 [![PyPI Status](https://badge.fury.io/py/scandi_dpr.svg)](https://pypi.org/project/scandi_dpr/)
 [![Documentation](https://img.shields.io/badge/docs-passing-green)](https://saattrupdan.github.io/ScandiDPR/scandi_dpr.html)
