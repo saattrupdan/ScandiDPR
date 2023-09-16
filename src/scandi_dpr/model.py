@@ -2,19 +2,28 @@
 
 from omegaconf import DictConfig
 from transformers import DPRContextEncoder, DPRQuestionEncoder
+import logging
+from .utils import no_terminal_output
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_model(cfg: DictConfig) -> tuple[DPRContextEncoder, DPRQuestionEncoder]:
     """Load a dense passage retrieval model.
 
     Args:
-        cfg: Configuration object.
+        cfg: Hydra configuration.
 
     Returns:
         The context and question encoder.
     """
-    context_encoder = DPRContextEncoder.from_pretrained(cfg.pretrained_model_id)
-    question_encoder = DPRQuestionEncoder.from_pretrained(cfg.pretrained_model_id)
-    assert isinstance(context_encoder, DPRContextEncoder)
-    assert isinstance(question_encoder, DPRQuestionEncoder)
+    logger.debug("Loading models")
+    with no_terminal_output():
+        context_encoder = DPRContextEncoder.from_pretrained(cfg.pretrained_model_id)
+        question_encoder = DPRQuestionEncoder.from_pretrained(cfg.pretrained_model_id)
+        assert isinstance(context_encoder, DPRContextEncoder)
+        assert isinstance(question_encoder, DPRQuestionEncoder)
+
+    logger.info(f"Loaded models from pretrained model ID {cfg.pretrained_model_id!r}")
     return context_encoder, question_encoder

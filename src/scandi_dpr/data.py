@@ -12,12 +12,12 @@ def load_data(cfg: DictConfig) -> DatasetDict:
     """Load the dataset.
 
     Args:
-        cfg: Configuration object.
+        cfg: Hydra configuration.
 
     Returns:
         The dataset.
     """
-    logger.info("Loading dataset")
+    logger.debug("Loading dataset")
     danish_dataset = load_dataset("alexandrainst/scandi-qa", "da")
     swedish_dataset = load_dataset("alexandrainst/scandi-qa", "sv")
     norwegian_dataset = load_dataset("alexandrainst/scandi-qa", "no")
@@ -25,7 +25,7 @@ def load_data(cfg: DictConfig) -> DatasetDict:
     assert isinstance(swedish_dataset, DatasetDict)
     assert isinstance(norwegian_dataset, DatasetDict)
 
-    logger.info("Concatenating splits")
+    logger.debug("Concatenating splits")
     train_split = concatenate_datasets(
         [danish_dataset["train"], swedish_dataset["train"], norwegian_dataset["train"]]
     ).shuffle(seed=cfg.seed)

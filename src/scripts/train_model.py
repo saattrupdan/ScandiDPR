@@ -5,7 +5,7 @@ Usage:
 """
 
 from omegaconf import DictConfig
-from scandi_dpr import load_data, load_model
+from scandi_dpr import load_data, tokenize_dataset, load_model, train
 import hydra
 
 
@@ -14,10 +14,17 @@ def main(cfg: DictConfig) -> None:
     """Train a dense retrieval model.
 
     Args:
-        cfg: Configuration object.
+        cfg: Hydra configuration.
     """
-    load_data(cfg)
-    context_encoder, question_encoder = load_model(cfg)
+    dataset = load_data(cfg=cfg)
+    tokenized_dataset = tokenize_dataset(dataset=dataset, cfg=cfg)
+    context_encoder, question_encoder = load_model(cfg=cfg)
+    context_encoder, question_encoder = train(
+        context_encoder=context_encoder,
+        question_encoder=question_encoder,
+        tokenized_dataset=tokenized_dataset,
+        cfg=cfg,
+    )
     breakpoint()
 
 
