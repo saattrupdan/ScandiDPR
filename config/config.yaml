@@ -9,4 +9,6 @@ dirs:
   final: final
   models: models
 
+pretrained_model_id: intfloat/multilingual-e5-large
+
 seed: 4242

@@ -5,18 +5,19 @@ Usage:
 """
 
 from omegaconf import DictConfig
-from scandi_dpr.data import load_data
+from scandi_dpr import load_data, load_model
 import hydra
 
 
 @hydra.main(config_path="../../config", config_name="config", version_base=None)
-def main(cfg: DictConfig):
+def main(cfg: DictConfig) -> None:
     """Train a dense retrieval model.
 
     Args:
         cfg: Configuration object.
     """
     load_data(cfg)
+    context_encoder, question_encoder = load_model(cfg)
     breakpoint()
 
 
