@@ -136,4 +136,5 @@ tree:  ## Print directory tree
 		-I poetry.lock \
 		-I processed \
 		-I raw \
+		-I .ruff_cache \
 		.

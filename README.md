@@ -48,7 +48,6 @@ publishing the code as a package and more.
 ## Project structure
 ```
 .
-├── .flake8
 ├── .github
 │   └── workflows
 │       ├── ci.yaml
@@ -62,19 +61,29 @@ publishing the code as a package and more.
 ├── README.md
 ├── config
 │   ├── __init__.py
-│   └── config.yaml
-├── data
+│   ├── config.yaml
+│   └── hydra
+│       └── job_logging
+│           └── custom.yaml
 ├── makefile
 ├── models
-├── notebooks
 ├── poetry.toml
 ├── pyproject.toml
 ├── src
-│   ├── scripts
-│   │   ├── fix_dot_env_file.py
-│   │   └── versioning.py
-│   └── scandi_dpr
-│       └── __init__.py
+│   ├── scandi_dpr
+│   │   ├── __init__.py
+│   │   ├── data.py
+│   │   ├── data_collator.py
+│   │   ├── evaluate.py
+│   │   ├── loss.py
+│   │   ├── model.py
+│   │   ├── tokenization.py
+│   │   ├── train.py
+│   │   └── utils.py
+│   └── scripts
+│       ├── fix_dot_env_file.py
+│       ├── train_model.py
+│       └── versioning.py
 └── tests
     ├── __init__.py
     └── test_dummy.py
