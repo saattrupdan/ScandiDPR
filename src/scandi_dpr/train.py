@@ -86,12 +86,10 @@ def train(
     )
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
-    step: int = -1
     loss_dct: dict[str, float] = dict()
     for _ in epoch_pbar:
         # Training
         for batch in tqdm(train_dataloader, desc="Batches"):
-            step += 1
             with accelerator.accumulate():
                 optimizer.zero_grad()
 
@@ -121,7 +119,7 @@ def train(
                 loss_dct["loss"] = loss.item()
                 epoch_pbar.set_postfix(loss_dct)
                 if cfg.wandb:
-                    wandb.log(data=loss_dct, step=step)  # type: ignore[attr-defined]
+                    wandb.log(data=loss_dct)  # type: ignore[attr-defined]
 
                 # Backward pass
                 accelerator.backward(loss)
