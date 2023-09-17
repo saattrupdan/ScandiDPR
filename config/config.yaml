@@ -12,16 +12,16 @@ dirs:
 # Data loading
 dataloader_num_workers: 4
 batch_size: 16
-gradient_accumulation_steps: 1
+gradient_accumulation_steps: 8
 seed: 4242
 
 # Model training
 pretrained_model_id: intfloat/multilingual-e5-base
-num_epochs: 10
+num_epochs: 50
 num_warmup_steps: 1000
 logging_steps: 10
 eval_steps: 250
-learning_rate: 3e-5
+learning_rate: 1e-5
 first_momentum: 0.9
 second_momentum: 0.999
 weight_decay: 0.01

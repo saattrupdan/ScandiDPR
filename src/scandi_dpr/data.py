@@ -4,6 +4,8 @@ from datasets import load_dataset, DatasetDict, concatenate_datasets
 from omegaconf import DictConfig
 import logging
 
+from scandi_dpr.utils import no_terminal_output
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,18 @@ def load_data(cfg: DictConfig) -> DatasetDict:
     assert isinstance(danish_dataset, DatasetDict)
     assert isinstance(swedish_dataset, DatasetDict)
     assert isinstance(norwegian_dataset, DatasetDict)
+
+    # Remove samples without any answer
+    with no_terminal_output():
+        danish_dataset = danish_dataset.filter(
+            function=lambda example: example["answers"]["text"][0] != ""
+        )
+        swedish_dataset = swedish_dataset.filter(
+            function=lambda example: example["answers"]["text"][0] != ""
+        )
+        norwegian_dataset = norwegian_dataset.filter(
+            function=lambda example: example["answers"]["text"][0] != ""
+        )
 
     logger.debug("Concatenating splits")
     train_split = concatenate_datasets(

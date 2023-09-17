@@ -16,6 +16,7 @@ import torch
 from wandb.sdk.wandb_init import init as wandb_init
 from wandb.sdk.wandb_run import finish as wandb_finish
 import wandb
+from math import ceil
 
 from .data_collator import data_collator
 from .loss import loss_function
@@ -35,9 +36,18 @@ def train(
         tokenized_dataset: The tokenized dataset.
         cfg: Hydra configuration.
     """
+    torch.manual_seed(cfg.seed)
     assert (
         cfg.eval_steps % cfg.logging_steps == 0
     ), "`eval_steps` must be a multiple of `logging_steps`."
+
+    if cfg.wandb:
+        wandb_init(
+            project=cfg.wandb_project,
+            group=cfg.wandb_group,
+            name=cfg.wandb_name,
+            config=dict(cfg),
+        )
 
     train_dataloader = DataLoader(
         dataset=tokenized_dataset["train"].with_format("torch"),
@@ -63,21 +73,14 @@ def train(
         betas=(cfg.first_momentum, cfg.second_momentum),
         weight_decay=cfg.weight_decay,
     )
-
+    num_batches: int = ceil(
+        len(train_dataloader) / (cfg.batch_size * cfg.gradient_accumulation_steps)
+    )
     scheduler = get_cosine_schedule_with_warmup(
         optimizer=optimizer,
         num_warmup_steps=cfg.num_warmup_steps,
-        num_training_steps=cfg.num_epochs * len(train_dataloader),
+        num_training_steps=cfg.num_epochs * num_batches,
     )
-
-    if cfg.wandb:
-        wandb_init(
-            project=cfg.wandb_project,
-            group=cfg.wandb_group,
-            name=cfg.wandb_name,
-            config=dict(cfg),
-        )
-
     accelerator = Accelerator(
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
         log_with=LoggerType.WANDB if cfg.wandb else None,
@@ -91,9 +94,11 @@ def train(
     pbar_loss_dct: dict[str, float] = dict()
     step: int = -1
     for _ in epoch_pbar:
-        # Training
-        for batch in tqdm(train_dataloader, desc="Training"):
+        for batch in tqdm(train_dataloader, desc="Training", leave=False):
             step += 1
+            learning_rate = scheduler.get_last_lr()[0]
+            wandb_loss_dct: dict[str, float] = dict(learning_rate=learning_rate)
+            pbar_loss_dct["learning_rate"] = learning_rate
             with accelerator.accumulate():
                 context_encoder.train()
                 question_encoder.train()
@@ -121,14 +126,14 @@ def train(
                     question_outputs=question_outputs,
                 )
                 pbar_loss_dct["loss"] = loss.item()
-                wandb_loss_dct = dict(loss=loss.item())
+                wandb_loss_dct["loss"] = loss.item()
 
                 # Backward pass
                 accelerator.backward(loss)
                 optimizer.step()
                 scheduler.step()
 
-                # Validation
+                # Evaluation
                 if step % cfg.eval_steps == 0:
                     context_encoder.eval()
                     question_encoder.eval()
