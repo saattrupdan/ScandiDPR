@@ -92,10 +92,10 @@ def train(
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
     pbar_loss_dct: dict[str, float] = dict()
-    step: int = -1
+    batch_step: int = -1
     for _ in epoch_pbar:
         for batch in tqdm(train_dataloader, desc="Training", leave=False):
-            step += 1
+            batch_step += 1
             learning_rate = scheduler.get_last_lr()[0]
             wandb_loss_dct: dict[str, float] = dict(learning_rate=learning_rate)
             pbar_loss_dct["learning_rate"] = learning_rate
@@ -134,7 +134,7 @@ def train(
                 scheduler.step()
 
                 # Evaluation
-                if step % cfg.eval_steps == 0:
+                if batch_step % cfg.eval_steps == 0:
                     context_encoder.eval()
                     question_encoder.eval()
                     for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
@@ -164,10 +164,10 @@ def train(
                             wandb_loss_dct["val_loss"] = val_loss.item()
 
                 # Report loss
-                if step % cfg.logging_steps == 0:
+                if batch_step % cfg.logging_steps == 0:
                     epoch_pbar.set_postfix(pbar_loss_dct)
                     if cfg.wandb:
-                        num_samples: int = (1 + step) * cfg.batch_size
+                        num_samples: int = (1 + batch_step) * cfg.batch_size
                         wandb.log(  # type: ignore[attr-defined]
                             data=wandb_loss_dct, step=num_samples
                         )
