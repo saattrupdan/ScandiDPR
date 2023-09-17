@@ -35,6 +35,10 @@ def train(
         tokenized_dataset: The tokenized dataset.
         cfg: Hydra configuration.
     """
+    assert (
+        cfg.eval_steps % cfg.logging_steps == 0
+    ), "`eval_steps` must be a multiple of `logging_steps`."
+
     train_dataloader = DataLoader(
         dataset=tokenized_dataset["train"].with_format("torch"),
         batch_size=cfg.batch_size,
@@ -116,13 +120,7 @@ def train(
                     context_outputs=context_outputs,
                     question_outputs=question_outputs,
                 )
-
-                # Report loss
-                if step and step % cfg.logging_steps == 0:
-                    loss_dct["loss"] = loss.item()
-                    epoch_pbar.set_postfix(loss_dct)
-                    if cfg.wandb:
-                        wandb.log(data=loss_dct)  # type: ignore[attr-defined]
+                loss_dct = dict(loss=loss.item())
 
                 # Backward pass
                 accelerator.backward(loss)
@@ -157,7 +155,15 @@ def train(
                                 question_outputs=question_outputs,
                             )
                             loss_dct["val_loss"] = val_loss.item()
-                            epoch_pbar.set_postfix(loss_dct)
+
+                # Report loss
+                if step and step % cfg.logging_steps == 0:
+                    epoch_pbar.set_postfix(loss_dct)
+                    if cfg.wandb:
+                        num_samples_seen: int = step * cfg.batch_size
+                        wandb.log(  # type: ignore[attr-defined]
+                            data=loss_dct, step=num_samples_seen
+                        )
 
     if cfg.wandb:
         wandb_finish()
