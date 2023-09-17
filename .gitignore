@@ -104,3 +104,6 @@ data/
 
 # Models
 models/
+
+# Experiement tracking
+wandb/
