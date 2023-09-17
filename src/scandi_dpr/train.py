@@ -94,12 +94,17 @@ def train(
     for _ in epoch_pbar:
         for batch in tqdm(train_dataloader, desc="Training", leave=False):
             batch_step += 1
+
+            # Set both models to train mode
+            context_encoder.train()
+            question_encoder.train()
+
+            # Set up reporting
             learning_rate = scheduler.get_last_lr()[0]
             wandb_loss_dct: dict[str, float] = dict(learning_rate=learning_rate)
             pbar_loss_dct["learning_rate"] = learning_rate
+
             with accelerator.accumulate([context_encoder, question_encoder]):
-                context_encoder.train()
-                question_encoder.train()
                 optimizer.zero_grad()
 
                 # Forward pass
@@ -133,8 +138,10 @@ def train(
 
             # Evaluation
             if batch_step % cfg.eval_steps == 0:
+                # Set both models to eval mode
                 context_encoder.eval()
                 question_encoder.eval()
+
                 for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
                     with torch.inference_mode():
                         # Forward pass
