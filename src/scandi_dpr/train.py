@@ -1,6 +1,7 @@
 """Training of dense passage retrieval models."""
 
 from functools import partial
+from accelerate.utils import LoggerType
 from datasets import DatasetDict
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader
@@ -12,6 +13,9 @@ from transformers import (
 from accelerate import Accelerator
 from tqdm.auto import tqdm
 import torch
+from wandb.sdk.wandb_init import init as wandb_init
+from wandb.sdk.wandb_run import finish as wandb_finish
+import wandb
 
 from .data_collator import data_collator
 from .loss import loss_function
@@ -65,17 +69,29 @@ def train(
         num_training_steps=cfg.num_epochs * len(train_dataloader),
     )
 
+    if cfg.wandb:
+        wandb_init(
+            project=cfg.wandb_project,
+            group=cfg.wandb_group,
+            name=cfg.wandb_name,
+            config=dict(cfg),
+        )
+
     accelerator = Accelerator(
-        gradient_accumulation_steps=cfg.gradient_accumulation_steps
+        gradient_accumulation_steps=cfg.gradient_accumulation_steps,
+        log_with=LoggerType.WANDB if cfg.wandb else None,
     )
     context_encoder, question_encoder, optimizer, scheduler = accelerator.prepare(
         context_encoder, question_encoder, optimizer, scheduler
     )
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
+    step: int = -1
+    loss_dct: dict[str, float] = dict()
     for _ in epoch_pbar:
         # Training
         for batch in tqdm(train_dataloader, desc="Batches"):
+            step += 1
             with accelerator.accumulate():
                 optimizer.zero_grad()
 
@@ -100,8 +116,14 @@ def train(
                     context_outputs=context_outputs,
                     question_outputs=question_outputs,
                 )
-                epoch_pbar.set_postfix({"loss": loss.item()})
 
+                # Report loss
+                loss_dct["loss"] = loss.item()
+                epoch_pbar.set_postfix(loss_dct)
+                if cfg.wandb:
+                    wandb.log(data=loss_dct, step=step)  # type: ignore[attr-defined]
+
+                # Backward pass
                 accelerator.backward(loss)
                 optimizer.step()
                 scheduler.step()
@@ -109,7 +131,6 @@ def train(
         # Validation
         context_encoder.eval()
         question_encoder.eval()
-        metric_values: list[float] = list()
         for batch in tqdm(val_dataloader, desc="Batches"):
             # Forward pass
             with torch.inference_mode():
@@ -129,16 +150,15 @@ def train(
                 )[0]
 
             # Calculate loss
-            loss = loss_function(
+            val_loss = loss_function(
                 context_outputs=context_outputs,
                 question_outputs=question_outputs,
             )
-            epoch_pbar.set_postfix({"val_loss": loss.item()})
 
-            # TODO: Calculate metric
-            pass
+            # Report loss
+            loss_dct["val_loss"] = val_loss.item()
+            epoch_pbar.set_postfix(loss_dct)
 
-        metric_value = sum(metric_values) / len(metric_values)
-        epoch_pbar.set_postfix({"val_metric": metric_value})
+    wandb_finish()
 
     return context_encoder, question_encoder

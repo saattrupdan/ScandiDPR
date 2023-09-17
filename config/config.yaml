@@ -11,15 +11,21 @@ dirs:
 
 # Data loading
 dataloader_num_workers: 4
-batch_size: 8
+batch_size: 16
 gradient_accumulation_steps: 1
 seed: 4242
 
 # Model training
-pretrained_model_id: intfloat/multilingual-e5-large
-num_epochs: 3
-num_warmup_steps: 50
+pretrained_model_id: intfloat/multilingual-e5-base
+num_epochs: 10
+num_warmup_steps: 1000
 learning_rate: 3e-4
 first_momentum: 0.9
 second_momentum: 0.999
 weight_decay: 0.01
+
+# Tracking
+wandb: false
+wandb_project: ScandiDPR
+wandb_group: default
+wandb_name: null
