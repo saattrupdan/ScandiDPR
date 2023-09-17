@@ -26,7 +26,7 @@ def train(
     question_encoder: DPRQuestionEncoder,
     tokenized_dataset: DatasetDict,
     cfg: DictConfig,
-) -> tuple[DPRContextEncoder, DPRQuestionEncoder]:
+) -> None:
     """Train a dense passage retrieval model.
 
     Args:
@@ -34,9 +34,6 @@ def train(
         question_encoder: The question encoder.
         tokenized_dataset: The tokenized dataset.
         cfg: Hydra configuration.
-
-    Returns:
-        The context and question encoder.
     """
     train_dataloader = DataLoader(
         dataset=tokenized_dataset["train"].with_format("torch"),
@@ -81,29 +78,34 @@ def train(
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
         log_with=LoggerType.WANDB if cfg.wandb else None,
     )
+    device = accelerator.device
     context_encoder, question_encoder, optimizer, scheduler = accelerator.prepare(
         context_encoder, question_encoder, optimizer, scheduler
     )
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
     loss_dct: dict[str, float] = dict()
+    step: int = -1
     for _ in epoch_pbar:
         # Training
         for batch in tqdm(train_dataloader, desc="Batches"):
+            step += 1
             with accelerator.accumulate():
+                context_encoder.train()
+                question_encoder.train()
                 optimizer.zero_grad()
 
                 # Forward pass
                 context_outputs = context_encoder(
                     **{
-                        key.replace("context_", ""): val.to(accelerator.device)
+                        key.replace("context_", ""): val.to(device)
                         for key, val in batch.items()
                         if key.startswith("context_")
                     }
                 )[0]
                 question_outputs = question_encoder(
                     **{
-                        key.replace("question_", ""): val.to(accelerator.device)
+                        key.replace("question_", ""): val.to(device)
                         for key, val in batch.items()
                         if key.startswith("question_")
                     }
@@ -116,47 +118,46 @@ def train(
                 )
 
                 # Report loss
-                loss_dct["loss"] = loss.item()
-                epoch_pbar.set_postfix(loss_dct)
-                if cfg.wandb:
-                    wandb.log(data=loss_dct)  # type: ignore[attr-defined]
+                if step and step % cfg.logging_steps == 0:
+                    loss_dct["loss"] = loss.item()
+                    epoch_pbar.set_postfix(loss_dct)
+                    if cfg.wandb:
+                        wandb.log(data=loss_dct)  # type: ignore[attr-defined]
 
                 # Backward pass
                 accelerator.backward(loss)
                 optimizer.step()
                 scheduler.step()
 
-        # Validation
-        context_encoder.eval()
-        question_encoder.eval()
-        for batch in tqdm(val_dataloader, desc="Batches"):
-            # Forward pass
-            with torch.inference_mode():
-                context_outputs = context_encoder(
-                    **{
-                        key.replace("context_", ""): val.to(accelerator.device)
-                        for key, val in batch.items()
-                        if key.startswith("context_")
-                    }
-                )[0]
-                question_outputs = question_encoder(
-                    **{
-                        key.replace("question_", ""): val.to(accelerator.device)
-                        for key, val in batch.items()
-                        if key.startswith("question_")
-                    }
-                )[0]
+                # Validation
+                if step and step % cfg.eval_steps == 0:
+                    context_encoder.eval()
+                    question_encoder.eval()
+                    for batch in tqdm(val_dataloader, desc="Batches", leave=False):
+                        with torch.inference_mode():
+                            # Forward pass
+                            context_outputs = context_encoder(
+                                **{
+                                    key.replace("context_", ""): val.to(device)
+                                    for key, val in batch.items()
+                                    if key.startswith("context_")
+                                }
+                            )[0]
+                            question_outputs = question_encoder(
+                                **{
+                                    key.replace("question_", ""): val.to(device)
+                                    for key, val in batch.items()
+                                    if key.startswith("question_")
+                                }
+                            )[0]
 
-            # Calculate loss
-            val_loss = loss_function(
-                context_outputs=context_outputs,
-                question_outputs=question_outputs,
-            )
+                            # Calculate loss
+                            val_loss = loss_function(
+                                context_outputs=context_outputs,
+                                question_outputs=question_outputs,
+                            )
+                            loss_dct["val_loss"] = val_loss.item()
+                            epoch_pbar.set_postfix(loss_dct)
 
-            # Report loss
-            loss_dct["val_loss"] = val_loss.item()
-            epoch_pbar.set_postfix(loss_dct)
-
-    wandb_finish()
-
-    return context_encoder, question_encoder
+    if cfg.wandb:
+        wandb_finish()

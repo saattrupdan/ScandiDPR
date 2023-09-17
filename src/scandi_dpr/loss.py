@@ -1,7 +1,7 @@
 """Functions related to the computation of the loss."""
 
 import torch
-from .utils import no_terminal_output
+from torch.nn.functional import cross_entropy
 
 
 def loss_function(
@@ -16,22 +16,14 @@ def loss_function(
     Returns:
         The loss.
     """
-    with no_terminal_output():
-        cosine_similarity = torch.nn.CosineSimilarity(dim=1)
+    # Compute all the similarities between the context and question outputs
+    # [batch_size, dim] x [batch_size, dim] -> [batch_size, batch_size]
+    similarities = context_outputs @ question_outputs.transpose(0, 1)
 
-        # Compute all the similarties between the context and question outputs
-        positive_similarities = cosine_similarity(context_outputs, question_outputs)
-        negative_similarities = torch.stack(
-            [
-                cosine_similarity(context_outputs, question_outputs.roll(k))
-                for k in range(1, context_outputs.shape[0])
-            ]
-        ).transpose(0, 1)
-
-        # Compute the negative log-likelihood of the positive examples
-        numerator = torch.exp(positive_similarities)
-        denominator = torch.exp(positive_similarities) + torch.sum(
-            torch.exp(negative_similarities), dim=1
-        )
-        loss = -torch.log(numerator / denominator)
-    return loss.mean()
+    # Compute the cross entropy loss of the similarities
+    # [batch_size, batch_size] -> [batch_size]
+    loss = cross_entropy(
+        input=similarities,
+        target=torch.arange(similarities.shape[0], device=similarities.device),
+    )
+    return loss

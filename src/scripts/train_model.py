@@ -19,7 +19,7 @@ def main(cfg: DictConfig) -> None:
     dataset = load_data(cfg=cfg)
     tokenized_dataset = tokenize_dataset(dataset=dataset, cfg=cfg)
     context_encoder, question_encoder = load_model(cfg=cfg)
-    context_encoder, question_encoder = train(
+    train(
         context_encoder=context_encoder,
         question_encoder=question_encoder,
         tokenized_dataset=tokenized_dataset,
