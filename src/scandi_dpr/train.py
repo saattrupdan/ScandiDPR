@@ -92,7 +92,7 @@ def train(
     step: int = -1
     for _ in epoch_pbar:
         # Training
-        for batch in tqdm(train_dataloader, desc="Batches"):
+        for batch in tqdm(train_dataloader, desc="Training"):
             step += 1
             with accelerator.accumulate():
                 context_encoder.train()
@@ -131,7 +131,7 @@ def train(
                 if step and step % cfg.eval_steps == 0:
                     context_encoder.eval()
                     question_encoder.eval()
-                    for batch in tqdm(val_dataloader, desc="Batches", leave=False):
+                    for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
                         with torch.inference_mode():
                             # Forward pass
                             context_outputs = context_encoder(
