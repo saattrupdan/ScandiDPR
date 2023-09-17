@@ -73,13 +73,13 @@ def train(
         betas=(cfg.first_momentum, cfg.second_momentum),
         weight_decay=cfg.weight_decay,
     )
-    num_batches: int = ceil(
+    num_optimization_steps_per_epoch: int = ceil(
         len(train_dataloader) / (cfg.batch_size * cfg.gradient_accumulation_steps)
     )
     scheduler = get_cosine_schedule_with_warmup(
         optimizer=optimizer,
         num_warmup_steps=cfg.num_warmup_steps,
-        num_training_steps=cfg.num_epochs * num_batches,
+        num_training_steps=cfg.num_epochs * num_optimization_steps_per_epoch,
     )
     accelerator = Accelerator(
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
