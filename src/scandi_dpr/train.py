@@ -163,14 +163,14 @@ def train(
                         pbar_loss_dct["val_loss"] = val_loss.item()
                         wandb_loss_dct["val_loss"] = val_loss.item()
 
-                # Report loss
-                if batch_step % cfg.logging_steps == 0:
-                    epoch_pbar.set_postfix(pbar_loss_dct)
-                    if cfg.wandb:
-                        num_samples: int = (1 + batch_step) * cfg.batch_size
-                        wandb.log(  # type: ignore[attr-defined]
-                            data=wandb_loss_dct, step=num_samples
-                        )
+            # Report loss
+            if batch_step % cfg.logging_steps == 0:
+                epoch_pbar.set_postfix(pbar_loss_dct)
+                if cfg.wandb:
+                    num_samples: int = (1 + batch_step) * cfg.batch_size
+                    wandb.log(  # type: ignore[attr-defined]
+                        data=wandb_loss_dct, step=num_samples
+                    )
 
     if cfg.wandb:
         wandb_finish()
