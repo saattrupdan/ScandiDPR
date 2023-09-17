@@ -20,8 +20,16 @@ def load_model(cfg: DictConfig) -> tuple[DPRContextEncoder, DPRQuestionEncoder]:
     """
     logger.debug("Loading models")
     with no_terminal_output():
-        context_encoder = DPRContextEncoder.from_pretrained(cfg.pretrained_model_id)
-        question_encoder = DPRQuestionEncoder.from_pretrained(cfg.pretrained_model_id)
+        context_encoder = DPRContextEncoder.from_pretrained(
+            cfg.pretrained_model_id,
+            attention_probs_dropout_prob=cfg.dropout,
+            hidden_dropout_prob=cfg.dropout,
+        )
+        question_encoder = DPRQuestionEncoder.from_pretrained(
+            cfg.pretrained_model_id,
+            attention_probs_dropout_prob=cfg.dropout,
+            hidden_dropout_prob=cfg.dropout,
+        )
         assert isinstance(context_encoder, DPRContextEncoder)
         assert isinstance(question_encoder, DPRQuestionEncoder)
 
