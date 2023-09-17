@@ -133,35 +133,35 @@ def train(
                 optimizer.step()
                 scheduler.step()
 
-                # Evaluation
-                if batch_step % cfg.eval_steps == 0:
-                    context_encoder.eval()
-                    question_encoder.eval()
-                    for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
-                        with torch.inference_mode():
-                            # Forward pass
-                            context_outputs = context_encoder(
-                                **{
-                                    key.replace("context_", ""): val.to(device)
-                                    for key, val in batch.items()
-                                    if key.startswith("context_")
-                                }
-                            )[0]
-                            question_outputs = question_encoder(
-                                **{
-                                    key.replace("question_", ""): val.to(device)
-                                    for key, val in batch.items()
-                                    if key.startswith("question_")
-                                }
-                            )[0]
+            # Evaluation
+            if batch_step % cfg.eval_steps == 0:
+                context_encoder.eval()
+                question_encoder.eval()
+                for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
+                    with torch.inference_mode():
+                        # Forward pass
+                        context_outputs = context_encoder(
+                            **{
+                                key.replace("context_", ""): val.to(device)
+                                for key, val in batch.items()
+                                if key.startswith("context_")
+                            }
+                        )[0]
+                        question_outputs = question_encoder(
+                            **{
+                                key.replace("question_", ""): val.to(device)
+                                for key, val in batch.items()
+                                if key.startswith("question_")
+                            }
+                        )[0]
 
-                            # Calculate loss
-                            val_loss = loss_function(
-                                context_outputs=context_outputs,
-                                question_outputs=question_outputs,
-                            )
-                            pbar_loss_dct["val_loss"] = val_loss.item()
-                            wandb_loss_dct["val_loss"] = val_loss.item()
+                        # Calculate loss
+                        val_loss = loss_function(
+                            context_outputs=context_outputs,
+                            question_outputs=question_outputs,
+                        )
+                        pbar_loss_dct["val_loss"] = val_loss.item()
+                        wandb_loss_dct["val_loss"] = val_loss.item()
 
                 # Report loss
                 if batch_step % cfg.logging_steps == 0:
