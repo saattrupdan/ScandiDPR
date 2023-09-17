@@ -16,7 +16,6 @@ import torch
 from wandb.sdk.wandb_init import init as wandb_init
 from wandb.sdk.wandb_run import finish as wandb_finish
 import wandb
-from math import ceil
 
 from .data_collator import data_collator
 from .loss import loss_function
@@ -73,11 +72,10 @@ def train(
         betas=(cfg.first_momentum, cfg.second_momentum),
         weight_decay=cfg.weight_decay,
     )
-    num_batches: int = ceil(len(train_dataloader) / cfg.batch_size)
     scheduler = get_cosine_schedule_with_warmup(
         optimizer=optimizer,
         num_warmup_steps=cfg.num_warmup_steps,
-        num_training_steps=cfg.num_epochs * num_batches,
+        num_training_steps=cfg.num_epochs * len(train_dataloader),
     )
     accelerator = Accelerator(
         gradient_accumulation_steps=cfg.gradient_accumulation_steps,
@@ -125,8 +123,7 @@ def train(
 
                 # Calculate loss
                 loss = loss_function(
-                    context_outputs=context_outputs,
-                    question_outputs=question_outputs,
+                    context_outputs=context_outputs, question_outputs=question_outputs
                 )
                 pbar_loss_dct["loss"] = loss.item()
                 wandb_loss_dct["loss"] = loss.item()
