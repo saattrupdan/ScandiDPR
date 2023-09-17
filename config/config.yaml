@@ -18,7 +18,7 @@ seed: 4242
 # Model training
 pretrained_model_id: intfloat/multilingual-e5-base
 num_epochs: 50
-num_warmup_steps: 1000
+num_warmup_steps: 10
 logging_steps: 10
 eval_steps: 250
 learning_rate: 1e-5
