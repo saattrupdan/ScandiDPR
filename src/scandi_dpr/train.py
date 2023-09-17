@@ -88,7 +88,7 @@ def train(
     )
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
-    loss_dct: dict[str, float] = dict()
+    pbar_loss_dct: dict[str, float] = dict()
     step: int = -1
     for _ in epoch_pbar:
         # Training
@@ -120,7 +120,8 @@ def train(
                     context_outputs=context_outputs,
                     question_outputs=question_outputs,
                 )
-                loss_dct = dict(loss=loss.item())
+                pbar_loss_dct["loss"] = loss.item()
+                wandb_loss_dct = dict(loss=loss.item())
 
                 # Backward pass
                 accelerator.backward(loss)
@@ -128,7 +129,7 @@ def train(
                 scheduler.step()
 
                 # Validation
-                if step and step % cfg.eval_steps == 0:
+                if step % cfg.eval_steps == 0:
                     context_encoder.eval()
                     question_encoder.eval()
                     for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
@@ -154,15 +155,16 @@ def train(
                                 context_outputs=context_outputs,
                                 question_outputs=question_outputs,
                             )
-                            loss_dct["val_loss"] = val_loss.item()
+                            pbar_loss_dct["val_loss"] = val_loss.item()
+                            wandb_loss_dct["val_loss"] = val_loss.item()
 
                 # Report loss
                 if step and step % cfg.logging_steps == 0:
-                    epoch_pbar.set_postfix(loss_dct)
+                    epoch_pbar.set_postfix(pbar_loss_dct)
                     if cfg.wandb:
                         num_samples_seen: int = step * cfg.batch_size
                         wandb.log(  # type: ignore[attr-defined]
-                            data=loss_dct, step=num_samples_seen
+                            data=wandb_loss_dct, step=num_samples_seen
                         )
 
     if cfg.wandb:
