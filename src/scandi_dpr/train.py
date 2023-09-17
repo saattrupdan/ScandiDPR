@@ -99,7 +99,7 @@ def train(
             learning_rate = scheduler.get_last_lr()[0]
             wandb_loss_dct: dict[str, float] = dict(learning_rate=learning_rate)
             pbar_loss_dct["learning_rate"] = learning_rate
-            with accelerator.accumulate():
+            with accelerator.accumulate([context_encoder, question_encoder]):
                 context_encoder.train()
                 question_encoder.train()
                 optimizer.zero_grad()
