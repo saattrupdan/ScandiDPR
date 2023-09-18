@@ -9,13 +9,8 @@ dirs:
   final: final
   models: models
 
-# Data loading
-dataloader_num_workers: 4
-batch_size: 16
-gradient_accumulation_steps: 8
-seed: 4242
-
-# Model architecture
+# Model
+model_name: scandi-dpr
 dropout: 0.0
 
 # Model training
@@ -28,6 +23,12 @@ learning_rate: 3e-5
 first_momentum: 0.9
 second_momentum: 0.999
 weight_decay: 0.01
+
+# Data loading
+dataloader_num_workers: 4
+batch_size: 16
+gradient_accumulation_steps: 8
+seed: 4242
 
 # Tracking
 wandb: false
