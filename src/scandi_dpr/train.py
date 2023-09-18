@@ -18,7 +18,7 @@ from wandb.sdk.wandb_run import finish as wandb_finish
 import wandb
 
 from .data_collator import data_collator
-from .loss import loss_function
+from .loss_and_metric import compute_loss_and_metric
 
 
 def train(
@@ -88,7 +88,7 @@ def train(
     )
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
-    pbar_loss_dct: dict[str, float] = dict()
+    pbar_log_dct: dict[str, float] = dict()
     batch_step: int = -1
     for _ in epoch_pbar:
         for batch in tqdm(train_dataloader, desc="Training", leave=False):
@@ -100,8 +100,8 @@ def train(
 
             # Set up reporting
             learning_rate = scheduler.get_last_lr()[0]
-            wandb_loss_dct: dict[str, float] = dict(learning_rate=learning_rate)
-            pbar_loss_dct["learning_rate"] = learning_rate
+            wandb_log_dct: dict[str, float] = dict(learning_rate=learning_rate)
+            pbar_log_dct["learning_rate"] = learning_rate
 
             with accelerator.accumulate([context_encoder, question_encoder]):
                 optimizer.zero_grad()
@@ -122,12 +122,12 @@ def train(
                     }
                 )[0]
 
-                # Calculate loss
-                loss = loss_function(
+                # Calculate loss and metric
+                loss, mrr = compute_loss_and_metric(
                     context_outputs=context_outputs, question_outputs=question_outputs
                 )
-                pbar_loss_dct["loss"] = loss.item()
-                wandb_loss_dct["loss"] = loss.item()
+                pbar_log_dct = pbar_log_dct | dict(loss=loss.item(), mrr=mrr.item())
+                wandb_log_dct = wandb_log_dct | dict(loss=loss.item(), mrr=mrr.item())
 
                 # Backward pass
                 accelerator.backward(loss)
@@ -158,21 +158,25 @@ def train(
                             }
                         )[0]
 
-                        # Calculate loss
-                        val_loss = loss_function(
+                        # Calculate loss and metric
+                        val_loss, val_mrr = compute_loss_and_metric(
                             context_outputs=context_outputs,
                             question_outputs=question_outputs,
                         )
-                        pbar_loss_dct["val_loss"] = val_loss.item()
-                        wandb_loss_dct["val_loss"] = val_loss.item()
+                        pbar_log_dct = pbar_log_dct | dict(
+                            val_loss=val_loss.item(), val_mrr=val_mrr.item()
+                        )
+                        wandb_log_dct = wandb_log_dct | dict(
+                            val_loss=val_loss.item(), val_mrr=val_mrr.item()
+                        )
 
-            # Report loss
+            # Report loss and metric
             if batch_step % cfg.logging_steps == 0:
-                epoch_pbar.set_postfix(pbar_loss_dct)
+                epoch_pbar.set_postfix(pbar_log_dct)
                 if cfg.wandb:
                     num_samples: int = (1 + batch_step) * cfg.batch_size
                     wandb.log(  # type: ignore[attr-defined]
-                        data=wandb_loss_dct, step=num_samples
+                        data=wandb_log_dct, step=num_samples
                     )
 
     if cfg.wandb:
