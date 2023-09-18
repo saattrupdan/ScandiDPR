@@ -2,7 +2,6 @@
 
 import torch
 from torch.nn.functional import cross_entropy
-from torcheval.metrics.functional import reciprocal_rank
 
 
 def compute_loss_and_metric(
@@ -28,11 +27,12 @@ def compute_loss_and_metric(
         target=torch.arange(similarities.shape[0], device=similarities.device),
     )
 
-    # Compute the reciprocal rank of the similarities
-    # [batch_size, batch_size] x [batch_size] -> [batch_size]
-    metric = reciprocal_rank(
-        input=similarities,
-        target=torch.arange(similarities.shape[0], device=similarities.device),
-    )
+    # Compute the ranks of the correct answers
+    # [batch_size, batch_size] -> [batch_size]
+    ranks = similarities.argsort(dim=1, descending=True).argsort(dim=1).diagonal() + 1
 
-    return loss, metric
+    # Compute the mean reciprocal rank of the similarities
+    # [batch_size] -> [batch_size]
+    mrr = torch.reciprocal(ranks.float()).mean()
+
+    return loss, mrr
