@@ -52,20 +52,22 @@ def save_model(
     """
     logger.info("Saving models")
     with no_terminal_output():
-        model_dir = Path(cfg.dirs.models)
-        context_encoder_dir = model_dir / f"{cfg.model_name}-context-encoder"
-        question_encoder_dir = model_dir / f"{cfg.model_name}-question-encoder"
-        context_encoder.save_pretrained(context_encoder_dir)
-        question_encoder.save_pretrained(question_encoder_dir)
+        model_dir = Path(cfg.dirs.models) / cfg.model_name
+        suffix_counter = 0
+        while model_dir.exists():
+            suffix_counter += 1
+            model_dir = model_dir.with_name(f"{model_dir.name}-{suffix_counter}")
+        context_encoder.save_pretrained(model_dir / "context-encoder")
+        question_encoder.save_pretrained(model_dir / "question-encoder")
     logger.info(f"Saved models to {model_dir!r}")
 
-    with no_terminal_output():
-        if cfg.push_to_hub:
-            logger.info("Pushing models to the Hugging Face Hub")
+    if cfg.push_to_hub:
+        logger.info("Pushing models to the Hugging Face Hub")
+        with no_terminal_output():
             context_encoder_id = f"alexandrainst/{cfg.model_name}-context-encoder"
             question_encoder_id = f"alexandrainst/{cfg.model_name}-question-encoder"
             context_encoder.push_to_hub(repo_id=context_encoder_id, token=True)
             question_encoder.push_to_hub(repo_id=question_encoder_id, token=True)
-            logger.info(
-                f"Pushed models to {context_encoder_id!r} and {question_encoder_id!r}"
-            )
+        logger.info(
+            f"Pushed models to {context_encoder_id!r} and {question_encoder_id!r}"
+        )
