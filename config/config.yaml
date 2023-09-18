@@ -34,5 +34,5 @@ seed: 4242
 # Tracking
 wandb: false
 wandb_project: ScandiDPR
-wandb_group: default
+wandb_group: null
 wandb_name: null
