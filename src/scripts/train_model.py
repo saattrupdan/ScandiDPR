@@ -5,8 +5,15 @@ Usage:
 """
 
 from omegaconf import DictConfig
-from scandi_dpr import load_data, tokenize_dataset, load_model, train
 import hydra
+from scandi_dpr import (
+    load_data,
+    tokenize_dataset,
+    load_model,
+    save_model,
+    train,
+    evaluate,
+)
 
 
 @hydra.main(config_path="../../config", config_name="config", version_base=None)
@@ -16,8 +23,11 @@ def main(cfg: DictConfig) -> None:
     Args:
         cfg: Hydra configuration.
     """
+    # Load and prepare the data
     dataset = load_data(cfg=cfg)
     tokenized_dataset = tokenize_dataset(dataset=dataset, cfg=cfg)
+
+    # Load and train the models
     context_encoder, question_encoder = load_model(cfg=cfg)
     train(
         context_encoder=context_encoder,
@@ -25,7 +35,24 @@ def main(cfg: DictConfig) -> None:
         tokenized_dataset=tokenized_dataset,
         cfg=cfg,
     )
-    breakpoint()
+
+    # Evaluate the models
+    evaluate(
+        context_encoder=context_encoder,
+        question_encoder=question_encoder,
+        tokenized_dataset=tokenized_dataset["test"],
+        cfg=cfg,
+    )
+
+    # Ask the user whether to keep the models, given the evaluation results
+    if cfg.push_to_hub:
+        user_message = "Save the models and push them to the Hugging Face Hub? [y/N] "
+    else:
+        user_message = "Save the models? [y/n] "
+    if input(user_message) == "y":
+        save_model(
+            context_encoder=context_encoder, question_encoder=question_encoder, cfg=cfg
+        )
 
 
 if __name__ == "__main__":
