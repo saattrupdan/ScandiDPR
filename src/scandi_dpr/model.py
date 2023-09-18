@@ -59,7 +59,7 @@ def save_model(
             model_dir = model_dir.with_name(f"{model_dir.name}-{suffix_counter}")
         context_encoder.save_pretrained(model_dir / "context-encoder")
         question_encoder.save_pretrained(model_dir / "question-encoder")
-    logger.info(f"Saved models to {model_dir!r}")
+    logger.info(f"Saved models to {str(model_dir)!r}")
 
     if cfg.push_to_hub:
         logger.info("Pushing models to the Hugging Face Hub")
