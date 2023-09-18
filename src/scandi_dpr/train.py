@@ -90,6 +90,8 @@ def train(
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
     pbar_log_dct: dict[str, float] = dict()
     batch_step: int = -1
+    losses: list[float] = list()
+    mrrs: list[float] = list()
     for _ in epoch_pbar:
         for batch in tqdm(train_dataloader, desc="Training", leave=False):
             batch_step += 1
@@ -126,8 +128,8 @@ def train(
                 loss, mrr = compute_loss_and_metric(
                     context_outputs=context_outputs, question_outputs=question_outputs
                 )
-                pbar_log_dct = pbar_log_dct | dict(loss=loss.item(), mrr=mrr.item())
-                wandb_log_dct = wandb_log_dct | dict(loss=loss.item(), mrr=mrr.item())
+                losses.append(loss.item())
+                mrrs.append(mrr.item())
 
                 # Backward pass
                 accelerator.backward(loss)
@@ -176,7 +178,13 @@ def train(
 
             # Report loss and metric
             if batch_step % cfg.logging_steps == 0:
+                loss = sum(losses) / len(losses)
+                mrr = sum(mrrs) / len(mrrs)
+                pbar_log_dct = pbar_log_dct | dict(loss=loss, mrr=mrr)
+                wandb_log_dct = wandb_log_dct | dict(loss=loss, mrr=mrr)
                 epoch_pbar.set_postfix(pbar_log_dct)
+                losses.clear()
+                mrrs.clear()
                 if cfg.wandb:
                     num_samples: int = (1 + batch_step) * cfg.batch_size
                     wandb.log(  # type: ignore[attr-defined]
