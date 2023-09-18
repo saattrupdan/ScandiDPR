@@ -12,6 +12,7 @@ dirs:
 # Model
 model_name: scandi-dpr
 dropout: 0.0
+push_to_hub: false
 
 # Model training
 pretrained_model_id: intfloat/multilingual-e5-base

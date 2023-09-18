@@ -50,7 +50,7 @@ def save_model(
         question_encoder: The question encoder.
         cfg: Hydra configuration.
     """
-    logger.debug("Saving models")
+    logger.info("Saving models")
     with no_terminal_output():
         model_dir = Path(cfg.dirs.models)
         context_encoder_dir = model_dir / f"{cfg.model_name}-context-encoder"
@@ -59,13 +59,13 @@ def save_model(
         question_encoder.save_pretrained(question_encoder_dir)
     logger.info(f"Saved models to {model_dir!r}")
 
-    logger.debug("Pushing models to the Hugging Face Hub")
     with no_terminal_output():
         if cfg.push_to_hub:
-            context_encoder.push_to_hub(
-                repo_id=f"alexandrainst/{cfg.model_name}-context-encoder", token=True
+            logger.info("Pushing models to the Hugging Face Hub")
+            context_encoder_id = f"alexandrainst/{cfg.model_name}-context-encoder"
+            question_encoder_id = f"alexandrainst/{cfg.model_name}-question-encoder"
+            context_encoder.push_to_hub(repo_id=context_encoder_id, token=True)
+            question_encoder.push_to_hub(repo_id=question_encoder_id, token=True)
+            logger.info(
+                f"Pushed models to {context_encoder_id!r} and {question_encoder_id!r}"
             )
-            question_encoder.push_to_hub(
-                repo_id=f"alexandrainst/{cfg.model_name}-question-encoder", token=True
-            )
-    logger.info("Pushed models to the Hugging Face Hub")
