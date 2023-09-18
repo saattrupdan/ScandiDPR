@@ -23,11 +23,8 @@ def main(cfg: DictConfig) -> None:
     Args:
         cfg: Hydra configuration.
     """
-    # Load and prepare the data
     dataset = load_data(cfg=cfg)
     tokenized_dataset = tokenize_dataset(dataset=dataset, cfg=cfg)
-
-    # Load and train the models
     context_encoder, question_encoder = load_model(cfg=cfg)
     train(
         context_encoder=context_encoder,
@@ -35,16 +32,12 @@ def main(cfg: DictConfig) -> None:
         tokenized_dataset=tokenized_dataset,
         cfg=cfg,
     )
-
-    # Evaluate the models
     evaluate(
         context_encoder=context_encoder,
         question_encoder=question_encoder,
         tokenized_dataset=tokenized_dataset["test"],
         cfg=cfg,
     )
-
-    # Ask the user whether to keep the models, given the evaluation results
     save_model(
         context_encoder=context_encoder, question_encoder=question_encoder, cfg=cfg
     )
