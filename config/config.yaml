@@ -11,11 +11,11 @@ dirs:
 
 # Model
 model_name: scandi-dpr
-dropout: 0.0
+pretrained_model_id: intfloat/multilingual-e5-base
 push_to_hub: true
+dropout: 0.0
 
 # Model training
-pretrained_model_id: intfloat/multilingual-e5-base
 num_epochs: 50
 num_warmup_steps: 100
 logging_steps: 10
