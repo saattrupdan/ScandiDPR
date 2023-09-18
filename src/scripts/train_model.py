@@ -45,14 +45,9 @@ def main(cfg: DictConfig) -> None:
     )
 
     # Ask the user whether to keep the models, given the evaluation results
-    if cfg.push_to_hub:
-        user_message = "Save the models and push them to the Hugging Face Hub? [y/N] "
-    else:
-        user_message = "Save the models? [y/n] "
-    if input(user_message) == "y":
-        save_model(
-            context_encoder=context_encoder, question_encoder=question_encoder, cfg=cfg
-        )
+    save_model(
+        context_encoder=context_encoder, question_encoder=question_encoder, cfg=cfg
+    )
 
 
 if __name__ == "__main__":
