@@ -140,6 +140,8 @@ def train(
                 context_encoder.eval()
                 question_encoder.eval()
 
+                val_losses: list[float] = list()
+                val_mrrs: list[float] = list()
                 for batch in tqdm(val_dataloader, desc="Evaluating", leave=False):
                     with torch.inference_mode():
                         # Forward pass
@@ -163,12 +165,14 @@ def train(
                             context_outputs=context_outputs,
                             question_outputs=question_outputs,
                         )
-                        pbar_log_dct = pbar_log_dct | dict(
-                            val_loss=val_loss.item(), val_mrr=val_mrr.item()
-                        )
-                        wandb_log_dct = wandb_log_dct | dict(
-                            val_loss=val_loss.item(), val_mrr=val_mrr.item()
-                        )
+                        val_losses.append(val_loss.item())
+                        val_mrrs.append(val_mrr.item())
+
+                # Aggegregate and store loss and metric
+                val_loss = sum(val_losses) / len(val_losses)
+                val_mrr = sum(val_mrrs) / len(val_mrrs)
+                pbar_log_dct = pbar_log_dct | dict(val_loss=val_loss, val_mrr=val_mrr)
+                wandb_log_dct = wandb_log_dct | dict(val_loss=val_loss, val_mrr=val_mrr)
 
             # Report loss and metric
             if batch_step % cfg.logging_steps == 0:
