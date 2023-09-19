@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def evaluate(
     context_encoder: DPRContextEncoder,
     question_encoder: DPRQuestionEncoder,
-    tokenized_dataset: Dataset,
+    preprocessed_dataset: Dataset,
     cfg: DictConfig,
 ) -> None:
     """Evaluate a dense passage retrieval model.
@@ -27,7 +27,7 @@ def evaluate(
     Args:
         context_encoder: The context encoder.
         question_encoder: The question encoder.
-        tokenized_dataset: The tokenized dataset.
+        preprocessed_dataset: The tokenized dataset.
         cfg: Hydra configuration.
     """
     logger.debug("Evaluating the model on the test set")
@@ -37,12 +37,13 @@ def evaluate(
     question_encoder.eval()
 
     dataloader = DataLoader(
-        dataset=tokenized_dataset.with_format("torch"),
+        dataset=preprocessed_dataset.with_format("torch"),
         batch_size=cfg.batch_size,
         num_workers=cfg.dataloader_num_workers,
         shuffle=True,
         collate_fn=partial(
-            data_collator, pad_token_id=context_encoder.config.pad_token_id
+            data_collator,
+            pad_token_id=context_encoder.config.pad_token_id,
         ),
     )
 
@@ -70,10 +71,16 @@ def evaluate(
                     if key.startswith("question_")
                 }
             )[0]
+            hard_negative_outputs = context_encoder(
+                input_ids=batch["hard_negative"].to(accelerator.device)
+            )[0]
+            combined_context_outputs = torch.cat(
+                [context_outputs, hard_negative_outputs]
+            )
 
             # Calculate loss and metric
             test_loss, test_mrr = compute_loss_and_metric(
-                context_outputs=context_outputs,
+                context_outputs=combined_context_outputs,
                 question_outputs=question_outputs,
             )
             test_losses.append(test_loss.item())

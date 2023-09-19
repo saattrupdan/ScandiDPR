@@ -6,6 +6,7 @@ from datasets import DatasetDict
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader
 from transformers import (
+    AutoTokenizer,
     DPRContextEncoder,
     DPRQuestionEncoder,
     get_cosine_schedule_with_warmup,
@@ -17,6 +18,7 @@ from wandb.sdk.wandb_init import init as wandb_init
 from wandb.sdk.wandb_run import finish as wandb_finish
 import wandb
 
+from .utils import no_terminal_output
 from .data_collator import data_collator
 from .loss_and_metric import compute_loss_and_metric
 
@@ -24,7 +26,7 @@ from .loss_and_metric import compute_loss_and_metric
 def train(
     context_encoder: DPRContextEncoder,
     question_encoder: DPRQuestionEncoder,
-    tokenized_dataset: DatasetDict,
+    preprocessed_dataset: DatasetDict,
     cfg: DictConfig,
 ) -> None:
     """Train a dense passage retrieval model.
@@ -32,7 +34,7 @@ def train(
     Args:
         context_encoder: The context encoder.
         question_encoder: The question encoder.
-        tokenized_dataset: The tokenized dataset.
+        preprocessed_dataset: The tokenized dataset.
         cfg: Hydra configuration.
     """
     torch.manual_seed(cfg.seed)
@@ -49,20 +51,22 @@ def train(
         )
 
     train_dataloader = DataLoader(
-        dataset=tokenized_dataset["train"].with_format("torch"),
+        dataset=preprocessed_dataset["train"].with_format("torch"),
         batch_size=cfg.batch_size,
         num_workers=cfg.dataloader_num_workers,
         shuffle=True,
         collate_fn=partial(
-            data_collator, pad_token_id=context_encoder.config.pad_token_id
+            data_collator,
+            pad_token_id=context_encoder.config.pad_token_id,
         ),
     )
     val_dataloader = DataLoader(
-        dataset=tokenized_dataset["val"].with_format("torch"),
+        dataset=preprocessed_dataset["val"].with_format("torch"),
         batch_size=cfg.batch_size,
         num_workers=cfg.dataloader_num_workers,
         collate_fn=partial(
-            data_collator, pad_token_id=context_encoder.config.pad_token_id
+            data_collator,
+            pad_token_id=context_encoder.config.pad_token_id,
         ),
     )
 
@@ -86,6 +90,9 @@ def train(
     context_encoder, question_encoder, optimizer, scheduler = accelerator.prepare(
         context_encoder, question_encoder, optimizer, scheduler
     )
+
+    with no_terminal_output():
+        AutoTokenizer.from_pretrained(cfg.pretrained_model_id)
 
     epoch_pbar = tqdm(range(cfg.num_epochs), desc="Epochs")
     pbar_log_dct: dict[str, float] = dict()
@@ -123,10 +130,17 @@ def train(
                         if key.startswith("question_")
                     }
                 )[0]
+                hard_negative_outputs = context_encoder(
+                    input_ids=batch["hard_negative"].to(device)
+                )[0]
+                combined_context_outputs = torch.cat(
+                    [context_outputs, hard_negative_outputs]
+                )
 
                 # Calculate loss and metric
                 loss, mrr = compute_loss_and_metric(
-                    context_outputs=context_outputs, question_outputs=question_outputs
+                    context_outputs=combined_context_outputs,
+                    question_outputs=question_outputs,
                 )
                 losses.append(loss.item())
                 mrrs.append(mrr.item())
@@ -161,10 +175,16 @@ def train(
                                 if key.startswith("question_")
                             }
                         )[0]
+                        hard_negative_outputs = context_encoder(
+                            input_ids=batch["hard_negative"].to(device)
+                        )[0]
+                        combined_context_outputs = torch.cat(
+                            [context_outputs, hard_negative_outputs]
+                        )
 
                         # Calculate loss and metric
                         val_loss, val_mrr = compute_loss_and_metric(
-                            context_outputs=context_outputs,
+                            context_outputs=combined_context_outputs,
                             question_outputs=question_outputs,
                         )
                         val_losses.append(val_loss.item())

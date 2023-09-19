@@ -1854,6 +1854,24 @@ files = [
 ]
 
 [[package]]
+name = "rank-bm25"
+version = "0.2.2"
+description = "Various BM25 algorithms for document ranking"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "rank_bm25-0.2.2-py3-none-any.whl", hash = "sha256:7bd4a95571adadfc271746fa146a4bcfd89c0cf731e49c3d1ad863290adbe8ae"},
+    {file = "rank_bm25-0.2.2.tar.gz", hash = "sha256:096ccef76f8188563419aaf384a02f0ea459503fdf77901378d4fd9d87e5e51d"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+dev = ["pytest"]
+
+[[package]]
 name = "readme-coverage-badger"
 version = "0.1.2"
 description = "automatically generates your project's coverage badge using the shields.io service, and then updates your README"
@@ -2896,4 +2914,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "0c84acb3736cfb6561a08060d02d8fbb39e91043bda66714b2b52f276c92abdc"
+content-hash = "78a3d8b30b5d495a71b4b53915b3d2a0c6866971205b460b03c785e63ad64bc8"

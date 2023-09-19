@@ -4,7 +4,10 @@ from transformers import BatchEncoding
 from torch.nn.utils.rnn import pad_sequence
 
 
-def data_collator(examples: list[dict], pad_token_id: int) -> BatchEncoding:
+def data_collator(
+    examples: list[dict],
+    pad_token_id: int,
+) -> BatchEncoding:
     """Data collator for dense passage retrieval.
 
     Args:
@@ -19,18 +22,20 @@ def data_collator(examples: list[dict], pad_token_id: int) -> BatchEncoding:
         "context_attention_mask",
         "question_input_ids",
         "question_attention_mask",
+        "hard_negative",
     ]
-    filtered_examples = [
+    examples = [
         {key: val for key, val in example.items() if key in allowed_keys}
         for example in examples
     ]
+
     return BatchEncoding(
         {
             key: pad_sequence(
-                sequences=[example[key] for example in filtered_examples],
+                sequences=[example[key] for example in examples],
                 batch_first=True,
                 padding_value=pad_token_id,
             )
-            for key in filtered_examples[0].keys()
+            for key in examples[0].keys()
         }
     )

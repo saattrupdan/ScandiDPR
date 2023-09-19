@@ -8,7 +8,6 @@ from datasets import enable_progress_bar, disable_progress_bar
 import logging
 import warnings
 from faker import Faker
-from omegaconf import DictConfig
 
 
 class no_terminal_output:
@@ -31,10 +30,17 @@ class no_terminal_output:
         warnings.filterwarnings("default", category=UserWarning)
 
 
-def generate_model_name(cfg: DictConfig) -> str:
-    """Return a random run ID."""
+def generate_model_name(models_dir: str | Path) -> str:
+    """Return a random run ID.
+
+    Args:
+        models_dir: The models directory.
+
+    Returns:
+        The run ID.
+    """
     run_id: str = ""
-    while not run_id and (Path(cfg.dirs.models) / run_id).exists():
+    while not run_id and (Path(models_dir) / run_id).exists():
         faker = Faker(locale="da_DK")
         first_name = faker.first_name().lower()
         last_name = faker.last_name().lower()

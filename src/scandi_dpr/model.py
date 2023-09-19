@@ -10,11 +10,14 @@ from .utils import no_terminal_output
 logger = logging.getLogger(__name__)
 
 
-def load_model(cfg: DictConfig) -> tuple[DPRContextEncoder, DPRQuestionEncoder]:
+def load_model(
+    pretrained_model_id: str, dropout: float
+) -> tuple[DPRContextEncoder, DPRQuestionEncoder]:
     """Load a dense passage retrieval model.
 
     Args:
-        cfg: Hydra configuration.
+        pretrained_model_id: The pretrained model ID.
+        dropout: The dropout probability.
 
     Returns:
         The context and question encoder.
@@ -22,19 +25,19 @@ def load_model(cfg: DictConfig) -> tuple[DPRContextEncoder, DPRQuestionEncoder]:
     logger.debug("Loading models")
     with no_terminal_output():
         context_encoder = DPRContextEncoder.from_pretrained(
-            cfg.pretrained_model_id,
-            attention_probs_dropout_prob=cfg.dropout,
-            hidden_dropout_prob=cfg.dropout,
+            pretrained_model_id,
+            attention_probs_dropout_prob=dropout,
+            hidden_dropout_prob=dropout,
         )
         question_encoder = DPRQuestionEncoder.from_pretrained(
-            cfg.pretrained_model_id,
-            attention_probs_dropout_prob=cfg.dropout,
-            hidden_dropout_prob=cfg.dropout,
+            pretrained_model_id,
+            attention_probs_dropout_prob=dropout,
+            hidden_dropout_prob=dropout,
         )
         assert isinstance(context_encoder, DPRContextEncoder)
         assert isinstance(question_encoder, DPRQuestionEncoder)
 
-    logger.info(f"Loaded models from pretrained model ID {cfg.pretrained_model_id!r}")
+    logger.info(f"Loaded models from pretrained model ID {pretrained_model_id!r}")
     return context_encoder, question_encoder
 
 

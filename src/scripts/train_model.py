@@ -9,6 +9,8 @@ import hydra
 from scandi_dpr import (
     load_data,
     tokenize_dataset,
+    add_hard_negatives,
+    remove_samples_without_any_answer,
     load_model,
     save_model,
     train,
@@ -25,20 +27,28 @@ def main(cfg: DictConfig) -> None:
         cfg: Hydra configuration.
     """
     if not cfg.model_name:
-        cfg.model_name = generate_model_name(cfg)
-    dataset = load_data(cfg=cfg)
-    tokenized_dataset = tokenize_dataset(dataset=dataset, cfg=cfg)
-    context_encoder, question_encoder = load_model(cfg=cfg)
+        cfg.model_name = generate_model_name(models_dir=cfg.dirs.models)
+    dataset = load_data(seed=cfg.seed)
+    tokenized_dataset = tokenize_dataset(
+        dataset=dataset, pretrained_model_id=cfg.pretrained_model_id
+    )
+    tokenized_dataset = add_hard_negatives(
+        tokenized_dataset=tokenized_dataset, seed=cfg.seed
+    )
+    preprocessed_dataset = remove_samples_without_any_answer(dataset=tokenized_dataset)
+    context_encoder, question_encoder = load_model(
+        pretrained_model_id=cfg.pretrained_model_id, dropout=cfg.dropout
+    )
     train(
         context_encoder=context_encoder,
         question_encoder=question_encoder,
-        tokenized_dataset=tokenized_dataset,
+        preprocessed_dataset=preprocessed_dataset,
         cfg=cfg,
     )
     evaluate(
         context_encoder=context_encoder,
         question_encoder=question_encoder,
-        tokenized_dataset=tokenized_dataset["test"],
+        preprocessed_dataset=preprocessed_dataset["test"],
         cfg=cfg,
     )
     save_model(
