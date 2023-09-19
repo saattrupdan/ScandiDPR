@@ -1,11 +1,14 @@
 """General utility functions."""
 
 import os
+from pathlib import Path
 import sys
 from transformers import logging as tf_logging
 from datasets import enable_progress_bar, disable_progress_bar
 import logging
 import warnings
+from faker import Faker
+from omegaconf import DictConfig
 
 
 class no_terminal_output:
@@ -26,3 +29,14 @@ class no_terminal_output:
         tf_logging.set_verbosity(logging.INFO)
         enable_progress_bar()
         warnings.filterwarnings("default", category=UserWarning)
+
+
+def generate_model_name(cfg: DictConfig) -> str:
+    """Return a random run ID."""
+    run_id: str = ""
+    while not run_id and (Path(cfg.dirs.models) / run_id).exists():
+        faker = Faker(locale="da_DK")
+        first_name = faker.first_name().lower()
+        last_name = faker.last_name().lower()
+        run_id = f"{first_name}-{last_name}"
+    return run_id

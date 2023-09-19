@@ -642,6 +642,21 @@ files = [
 testing = ["hatch", "pre-commit", "pytest", "tox"]
 
 [[package]]
+name = "faker"
+version = "19.6.1"
+description = "Faker is a Python package that generates fake data for you."
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "Faker-19.6.1-py3-none-any.whl", hash = "sha256:64c8513c53c3a809075ee527b323a0ba61517814123f3137e4912f5d43350139"},
+    {file = "Faker-19.6.1.tar.gz", hash = "sha256:5d6b7880b3bea708075ddf91938424453f07053a59f8fa0453c1870df6ff3292"},
+]
+
+[package.dependencies]
+python-dateutil = ">=2.4"
+
+[[package]]
 name = "filelock"
 version = "3.12.4"
 description = "A platform independent file lock."
@@ -2881,4 +2896,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "4b65bf25d76497afe87c1cecce6a01c0e22ac7d7b14a9e38bfbb5b55792a45de"
+content-hash = "0c84acb3736cfb6561a08060d02d8fbb39e91043bda66714b2b52f276c92abdc"

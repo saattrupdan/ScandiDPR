@@ -14,6 +14,7 @@ from scandi_dpr import (
     train,
     evaluate,
 )
+from scandi_dpr.utils import generate_model_name
 
 
 @hydra.main(config_path="../../config", config_name="config", version_base=None)
@@ -23,6 +24,8 @@ def main(cfg: DictConfig) -> None:
     Args:
         cfg: Hydra configuration.
     """
+    if not cfg.model_name:
+        cfg.model_name = generate_model_name(cfg)
     dataset = load_data(cfg=cfg)
     tokenized_dataset = tokenize_dataset(dataset=dataset, cfg=cfg)
     context_encoder, question_encoder = load_model(cfg=cfg)
