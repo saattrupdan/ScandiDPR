@@ -10,7 +10,7 @@ dirs:
   models: models
 
 # Model
-model_name: scandi-dpr
+model_name: null
 pretrained_model_id: intfloat/multilingual-e5-base
 push_to_hub: false
 dropout: 0.0
@@ -35,4 +35,3 @@ seed: 4242
 wandb: false
 wandb_project: ScandiDPR
 wandb_group: default
-wandb_name: null

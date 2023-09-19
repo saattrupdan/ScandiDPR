@@ -44,7 +44,7 @@ def train(
         wandb_init(
             project=cfg.wandb_project,
             group=cfg.wandb_group,
-            name=cfg.wandb_name,
+            name=cfg.model_name,
             config=dict(cfg),
         )
 

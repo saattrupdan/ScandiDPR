@@ -52,7 +52,7 @@ def save_model(
     """
     logger.info("Saving models")
     with no_terminal_output():
-        model_dir = Path(cfg.dirs.models) / cfg.model_name
+        model_dir: Path = Path(cfg.dirs.models) / cfg.model_name
         suffix_counter = 0
         while model_dir.exists():
             suffix_counter += 1
